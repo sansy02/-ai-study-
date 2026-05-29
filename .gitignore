@@ -1,0 +1,28 @@
+# 依赖
+node_modules/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# 数据库
+*.db
+*.sqlite3
+
+# 环境变量（包含 API Key）
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 构建产物
+frontend/dist/

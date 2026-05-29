@@ -1,0 +1,61 @@
+"""
+AI 智能教学助手 — 后端服务
+FastAPI 应用入口
+"""
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from database import init_db
+from middleware.rate_limit import limiter
+from routers.profile import router as profile_router
+from routers.upload import router as upload_router
+from routers.content import router as content_router
+from routers.settings import router as settings_router
+from routers.vocabulary import router as vocabulary_router
+from routers.practice import router as practice_router
+from routers.auth import router as auth_router
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """应用启动时初始化数据库"""
+    init_db()
+    yield
+
+
+app = FastAPI(
+    title="AI 智能教学助手",
+    description="上传 PPT 或输入话题，AI 自动生成教学内容、英语词汇和练习题",
+    version="1.0.0",
+    lifespan=lifespan,
+)
+
+# 注册速率限制器
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# 注册路由
+app.include_router(profile_router)
+app.include_router(upload_router)
+app.include_router(content_router)
+app.include_router(settings_router)
+app.include_router(vocabulary_router)
+app.include_router(practice_router)
+app.include_router(auth_router)
+
+
+@app.get("/api/health")
+async def health_check():
+    """健康检查"""
+    return {"status": "ok", "message": "AI 智能教学助手后端运行中"}

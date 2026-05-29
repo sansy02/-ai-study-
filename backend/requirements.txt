@@ -1,0 +1,11 @@
+fastapi==0.115.6
+slowapi==0.1.9
+bcrypt==4.2.1
+pyjwt==2.10.1
+uvicorn[standard]==0.34.0
+python-multipart==0.0.19
+python-pptx==1.0.2
+PyPDF2==3.0.1
+sqlalchemy==2.0.36
+httpx==0.28.1
+pydantic==2.10.3
