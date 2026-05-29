@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 interface LoginProps {
   onLogin: (token: string, user: { email: string; grade: string; major: string; subject: string }) => void
@@ -13,6 +13,14 @@ export default function Login({ onLogin }: LoginProps) {
   const [major, setMajor] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const [warming, setWarming] = useState(true)
+
+  // 页面打开时预热后端（唤醒 Render 休眠）
+  useEffect(() => {
+    fetch(`${import.meta.env.VITE_API_URL || "/api"}/health`)
+      .then(() => setWarming(false))
+      .catch(() => setWarming(false))
+  }, [])
 
   const handleSubmit = async () => {
     setError("")
@@ -51,7 +59,7 @@ export default function Login({ onLogin }: LoginProps) {
           <div className="text-5xl mb-4">📚</div>
           <h1 className="text-2xl font-semibold text-gray-900 mb-2">AI 智能教学助手</h1>
           <p className="text-sm text-gray-400">
-            {mode === "login" ? "欢迎回来" : "创建账号开始学习"}
+            {warming ? "⏳ 服务器唤醒中..." : mode === "login" ? "欢迎回来" : "创建账号开始学习"}
           </p>
         </div>
 
