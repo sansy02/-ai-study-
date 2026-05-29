@@ -10,7 +10,7 @@ import {
 interface PracticeProps {
   sessionId: string
   preferences: Preferences
-  onNavigate: (page: string) => void
+  onNavigate: (page: string, sessionId?: string) => void
 }
 
 export default function Practice({ sessionId, preferences, onNavigate }: PracticeProps) {
