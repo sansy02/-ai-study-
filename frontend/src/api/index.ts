@@ -2,7 +2,8 @@
  * API 请求工具
  */
 
-const BASE = "/api"
+// 开发环境用 Vite 代理，生产环境用完整后端地址
+const BASE = import.meta.env.VITE_API_URL || "/api"
 
 function getToken(): string {
   return localStorage.getItem("token") || ""
