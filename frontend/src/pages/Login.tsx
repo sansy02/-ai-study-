@@ -11,7 +11,6 @@ export default function Login({ onLogin }: LoginProps) {
   const [confirmPassword, setConfirmPassword] = useState("")
   const [grade, setGrade] = useState("")
   const [major, setMajor] = useState("")
-  const [subject, setSubject] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
@@ -26,7 +25,7 @@ export default function Login({ onLogin }: LoginProps) {
       const endpoint = mode === "login" ? "/api/auth/login" : "/api/auth/register"
       const body = mode === "login"
         ? JSON.stringify({ email, password })
-        : JSON.stringify({ email, password, confirm_password: confirmPassword, grade, major, subject })
+        : JSON.stringify({ email, password, confirm_password: confirmPassword, grade, major })
 
       const res = await fetch(endpoint, {
         method: "POST",

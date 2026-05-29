@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import {
-  getMe, updateMe, changePassword, getUserStats, getUserVocabulary, clearToken,
+  getMe, updateMe, changePassword, getUserStats, getUserVocabulary,
   type UserInfo, type UserStats, type VocabWord,
 } from "../api"
 
