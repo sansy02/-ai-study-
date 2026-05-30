@@ -82,12 +82,18 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
       const formData = new FormData()
       formData.append("file", selectedFile)
       const token = localStorage.getItem("token") || ""
-      const res = await fetch("/api/upload", {
+      const API_BASE = import.meta.env.VITE_API_URL || "/api"
+      const res = await fetch(`${API_BASE}/upload`, {
         method: "POST",
         body: formData,
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       })
-      if (!res.ok) { const err = await res.json(); throw new Error(err.detail || "上传失败") }
+      if (!res.ok) {
+        const contentType = res.headers.get("content-type") || ""
+        const errMsg = contentType.includes("application/json")
+          ? (await res.json()).detail : "服务器返回了无效响应"
+        throw new Error(errMsg || "上传失败")
+      }
       const data = await res.json()
       setExtractedText(data.text)
       setTextPreview(data.preview)

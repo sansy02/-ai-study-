@@ -30,7 +30,8 @@ export default function Login({ onLogin }: LoginProps) {
 
     setLoading(true)
     try {
-      const endpoint = mode === "login" ? "/api/auth/login" : "/api/auth/register"
+      const API_BASE = import.meta.env.VITE_API_URL || "/api"
+      const endpoint = `${API_BASE}/auth/${mode === "login" ? "login" : "register"}`
       const body = mode === "login"
         ? JSON.stringify({ email, password })
         : JSON.stringify({ email, password, confirm_password: confirmPassword, grade, major })
@@ -40,6 +41,11 @@ export default function Login({ onLogin }: LoginProps) {
         headers: { "Content-Type": "application/json" },
         body,
       })
+      // 检查响应是否为 JSON，避免解析 HTML 错误页时报错
+      const contentType = res.headers.get("content-type") || ""
+      if (!contentType.includes("application/json")) {
+        throw new Error("服务器返回了无效响应，请确认后端服务是否正常运行")
+      }
       const data = await res.json()
       if (!res.ok) throw new Error(data.detail || "请求失败")
 

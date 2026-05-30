@@ -7,5 +7,6 @@ python-multipart==0.0.19
 python-pptx==1.0.2
 PyPDF2==3.0.1
 sqlalchemy==2.0.36
+psycopg2-binary==2.9.10
 httpx==0.28.1
 pydantic==2.10.3
