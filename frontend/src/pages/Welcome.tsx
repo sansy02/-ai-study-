@@ -104,7 +104,7 @@ export default function Welcome({ onStart }: WelcomeProps) {
         <div className="text-center mb-10">
           <div className="text-5xl mb-4">📚</div>
           <h1 className="text-2xl font-semibold text-gray-900 mb-2">
-            AI 智能教学助手
+            欢迎访问爱学助手
           </h1>
           <p className="text-sm text-gray-400 leading-relaxed">
             上传 PPT 或输入话题，AI 自动生成

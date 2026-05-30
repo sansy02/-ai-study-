@@ -4,6 +4,8 @@ import {
   generateVocabulary,
   getLatestProfile,
   toggleVocabFavorite,
+  checkApiKeyStatus,
+  setApiKey,
   type Preferences,
   type OutlineItem,
   type Chapter,
@@ -26,6 +28,12 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
   const [error, setError] = useState("")
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // API Key 状态
+  const [showApiPanel, setShowApiPanel] = useState(false)
+  const [apiKeyInput, setApiKeyInput] = useState("")
+  const [keyConfigured, setKeyConfigured] = useState(false)
+  const [savingKey, setSavingKey] = useState(false)
+
   // 生成状态
   const [generating, setGenerating] = useState(false)
   const [sessionId, setSessionId] = useState("")
@@ -44,7 +52,22 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
     getLatestProfile().then((p) => {
       if (p) setProfile({ grade: p.grade || "", major: p.major || "", subject: p.subject || "" })
     }).catch(() => {})
+    checkApiKeyStatus().then((s) => setKeyConfigured(s.configured)).catch(() => {})
   }, [])
+
+  // 保存自定义 API Key
+  const handleSaveKey = async () => {
+    if (!apiKeyInput.trim()) return
+    setSavingKey(true)
+    try {
+      await setApiKey(apiKeyInput.trim())
+      setKeyConfigured(true)
+      setShowApiPanel(false)
+      setError("")
+    } catch {
+      setError("API Key 保存失败")
+    } finally { setSavingKey(false) }
+  }
 
   // 上传并解析文件
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -272,7 +295,7 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
   return (
     <div className="min-h-screen bg-white">
       <div className="border-b border-gray-100 px-4 py-3 flex items-center justify-between max-w-4xl mx-auto">
-        <h2 className="text-sm font-medium text-gray-800">AI 智能教学助手</h2>
+        <h2 className="text-sm font-medium text-gray-800">爱学助手</h2>
         <button
           onClick={() => onNavigate("welcome")}
           className="text-xs text-gray-400 hover:text-gray-600"
@@ -288,6 +311,65 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
             输入话题或上传 PPT/PDF，AI 为你生成教学内容
           </p>
         </div>
+
+        {/* API Key 面板 */}
+        {!keyConfigured ? (
+          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+            <p className="text-xs text-amber-700 font-medium mb-1">
+              🎓 每日免费使用 5 次
+            </p>
+            <p className="text-xs text-amber-500 mb-3">
+              更多次数请自行添加 API Key，或等待后续更新
+            </p>
+            {!showApiPanel ? (
+              <button
+                onClick={() => setShowApiPanel(true)}
+                className="text-xs text-amber-600 underline hover:text-amber-800"
+              >
+                添加 API Key →
+              </button>
+            ) : (
+              <div>
+                <div className="flex gap-2 mb-2">
+                  <input type="password" value={apiKeyInput}
+                         onChange={(e) => setApiKeyInput(e.target.value)}
+                         placeholder="粘贴 DeepSeek API Key"
+                         className="flex-1 px-3 py-2 text-xs border border-amber-200 rounded-lg outline-none bg-white" />
+                  <button onClick={handleSaveKey} disabled={!apiKeyInput.trim() || savingKey}
+                          className="px-3 py-2 text-xs bg-amber-600 text-white rounded-lg hover:bg-amber-700
+                                     disabled:opacity-50">{savingKey ? "保存" : "确认"}</button>
+                </div>
+                <p className="text-xs text-amber-400">
+                  如何获取？详见{' '}
+                  <a href="https://github.com/sansy02/-ai-study-" target="_blank" rel="noreferrer"
+                     className="underline">GitHub 说明 →</a>
+                </p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="mb-6 flex items-center justify-between p-3 bg-green-50 border border-green-100 rounded-xl">
+            <span className="text-xs text-green-600">✅ API Key 已配置 · 无限制使用</span>
+            <button onClick={() => setShowApiPanel(true)}
+                    className="text-xs text-gray-400 hover:text-gray-600">更换</button>
+          </div>
+        )}
+        {keyConfigured && showApiPanel && (
+          <div className="mb-6 p-3 bg-gray-50 border border-gray-200 rounded-xl">
+            <div className="flex gap-2">
+              <input type="password" value={apiKeyInput}
+                     onChange={(e) => setApiKeyInput(e.target.value)}
+                     placeholder="输入新的 API Key"
+                     className="flex-1 px-3 py-2 text-xs border border-gray-200 rounded-lg outline-none bg-white" />
+              <button onClick={handleSaveKey} disabled={!apiKeyInput.trim() || savingKey}
+                      className="px-3 py-2 text-xs bg-gray-900 text-white rounded-lg disabled:opacity-50">
+                保存
+              </button>
+              <button onClick={() => { setShowApiPanel(false); setApiKeyInput("") }}
+                      className="text-xs text-gray-400 hover:text-gray-600">取消</button>
+            </div>
+          </div>
+        )}
 
         {/* 话题输入 */}
         <div className="mb-6">

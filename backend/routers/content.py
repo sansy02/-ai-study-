@@ -80,6 +80,22 @@ async def generate_content(request: Request, req: GenerateRequest, db: Session =
         if not valid:
             raise HTTPException(status_code=400, detail=f"内容未通过审核: {reason}")
 
+    # 每日免费次数检查（5次/天，管理员配了 API Key 则无限制）
+    from routers.settings import get_api_key
+    from datetime import datetime, timedelta
+    admin_key = get_api_key()
+    if admin_key == "your-api-key-here":
+        today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        daily_count = db.query(StudySession).filter(
+            StudySession.user_id == user_id,
+            StudySession.created_at >= today_start
+        ).count()
+        if daily_count >= 5:
+            raise HTTPException(
+                status_code=429,
+                detail="今日免费次数已用完（5次/天）。请等待明日重置，或自行配置 API Key。详见 https://github.com/sansy02/-ai-study-"
+            )
+
     # 保存学生画像
     profile = StudentProfile(
         grade=req.grade,

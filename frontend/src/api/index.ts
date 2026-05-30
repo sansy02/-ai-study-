@@ -9,17 +9,34 @@ function getToken(): string {
   return localStorage.getItem("token") || ""
 }
 
-async function request<T>(url: string, options?: RequestInit): Promise<T> {
+async function request<T>(url: string, options?: RequestInit, retryCount = 0): Promise<T> {
   const token = getToken()
   const headers: Record<string, string> = { "Content-Type": "application/json" }
   if (token) headers["Authorization"] = `Bearer ${token}`
 
   const res = await fetch(`${BASE}${url}`, { headers, ...options })
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: `HTTP ${res.status}` }))
-    throw new Error(err.detail || `API Error: ${res.status}`)
+    const text = await res.text()
+    // Render 休眠返回 HTML，自动重试一次（等待唤醒）
+    if (text.includes("<!DOCTYPE") && retryCount < 1) {
+      await new Promise((r) => setTimeout(r, 5000))
+      return request(url, options, retryCount + 1)
+    }
+    try {
+      const err = JSON.parse(text)
+      throw new Error(err.detail || `HTTP ${res.status}`)
+    } catch (e: any) {
+      if (e.message && !e.message.startsWith("HTTP")) throw e
+      throw new Error(`服务器正在唤醒中，请稍后重试 (${res.status})`)
+    }
   }
-  return res.json()
+  const text = await res.text()
+  // 防止 HTML 响应被当作 JSON 解析
+  if (text.startsWith("<!DOCTYPE") && retryCount < 1) {
+    await new Promise((r) => setTimeout(r, 5000))
+    return request(url, options, retryCount + 1)
+  }
+  return JSON.parse(text)
 }
 
 // ---- 类型 ----
