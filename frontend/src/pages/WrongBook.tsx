@@ -3,9 +3,10 @@ import { getWrongBook, type WrongBookEntry } from "../api"
 
 interface WrongBookProps {
   onNavigate: (page: string) => void
+  from?: string
 }
 
-export default function WrongBook({ onNavigate }: WrongBookProps) {
+export default function WrongBook({ onNavigate, from }: WrongBookProps) {
   const [entries, setEntries] = useState<WrongBookEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [showExplanation, setShowExplanation] = useState<Record<number, boolean>>({})
@@ -34,7 +35,7 @@ export default function WrongBook({ onNavigate }: WrongBookProps) {
       {/* 顶部栏 */}
       <div className="border-b border-gray-100 px-4 py-3 flex items-center gap-4">
         <button
-          onClick={() => onNavigate("study")}
+          onClick={() => onNavigate(from || "study")}
           className="text-xs text-gray-400 hover:text-gray-600"
         >
           ← 返回

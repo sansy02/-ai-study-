@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react"
 import {
   generateContent,
   generateVocabulary,
+  generateExercises,
   getMe,
   toggleVocabFavorite,
   checkApiKeyStatus,
@@ -56,6 +57,10 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
   // 已收藏词汇ID
   const [favoritedIds, setFavoritedIds] = useState<Set<number>>(new Set())
 
+  // 后台预生成练习题
+  const [exercisesReady, setExercisesReady] = useState(false)
+  const [preGenerating, setPreGenerating] = useState(false)
+
   // 加载学生画像
   const [profile, setProfile] = useState({ grade: "", major: "", subject: "" })
   useEffect(() => {
@@ -64,6 +69,18 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
     }).catch(() => {})
     checkApiKeyStatus().then((s) => setKeyConfigured(s.source === "user")).catch(() => {})
   }, [])
+
+  // 学到倒数第二章时，后台预生成练习题
+  useEffect(() => {
+    if (!sessionId || chapters.length < 3 || !preferences.show_practice) return
+    if (activeChapter === chapters.length - 2 && !exercisesReady && !preGenerating) {
+      setPreGenerating(true)
+      generateExercises(sessionId)
+        .then(() => setExercisesReady(true))
+        .catch(() => {})
+        .finally(() => setPreGenerating(false))
+    }
+  }, [activeChapter, chapters.length, sessionId, exercisesReady, preGenerating, preferences.show_practice])
 
   // 保存自定义 API Key
   const handleSaveKey = async () => {
