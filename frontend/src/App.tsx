@@ -6,9 +6,10 @@ import Practice from "./pages/Practice"
 import WrongBook from "./pages/WrongBook"
 import Profile from "./pages/Profile"
 import About from "./pages/About"
+import VocabularyBook from "./pages/VocabularyBook"
 import { hasToken, clearToken, getMe, type Preferences } from "./api"
 
-type Page = "login" | "welcome" | "study" | "practice" | "wrongbook" | "profile" | "about"
+type Page = "login" | "welcome" | "study" | "practice" | "wrongbook" | "profile" | "about" | "vocabularybook"
 
 function App() {
   const [page, setPage] = useState<Page>("login")
@@ -83,6 +84,7 @@ function App() {
       <button onClick={() => setPage("about")} className="text-xs text-gray-400 hover:text-gray-600">关于我</button>
       <div className="flex-1" />
       <button onClick={() => handleNavigate("wrongbook")} className="text-xs text-gray-400 hover:text-gray-600">错题本</button>
+      <button onClick={() => handleNavigate("vocabularybook")} className="text-xs text-gray-400 hover:text-gray-600">词汇</button>
       <button onClick={() => setPage("profile")} className="text-xs text-gray-400 hover:text-gray-600">个人中心</button>
     </div>
   )
@@ -105,6 +107,8 @@ function App() {
       return <Profile onNavigate={handleNavigate} onLogout={handleLogout} preferences={preferences} />
     case "about":
       return <About onNavigate={handleNavigate} />
+    case "vocabularybook":
+      return <VocabularyBook onNavigate={handleNavigate} />
     default:
       return null
   }

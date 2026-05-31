@@ -159,10 +159,11 @@ export default function Profile({ onNavigate, onLogout, preferences }: ProfilePr
             <span className="text-sm text-gray-700">📖 错题本</span>
             <span className="text-xs text-gray-300">{stats?.wrong_count || 0} 道 →</span>
           </button>
-          <div className="w-full flex items-center justify-between p-3 rounded-xl">
+          <button onClick={() => onNavigate("vocabularybook")}
+                  className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition-colors">
             <span className="text-sm text-gray-700">📚 我的词汇收藏</span>
-            <span className="text-xs text-gray-300">{words.length} 词</span>
-          </div>
+            <span className="text-xs text-gray-300">{words.length} 词 →</span>
+          </button>
         </div>
 
         {/* 收藏词汇列表 */}
