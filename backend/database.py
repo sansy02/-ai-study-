@@ -2,15 +2,26 @@
 数据库连接和会话管理
 """
 import os
+import socket
+from urllib.parse import urlparse, urlunparse
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./aixue.db")
 
-# PostgreSQL 需要额外的连接参数；SQLite 需要 check_same_thread
+# PostgreSQL 强制使用 IPv4（Render 免费版不支持 IPv6 出站连接）
 if DATABASE_URL.startswith("postgresql"):
-    engine = create_engine(DATABASE_URL)
+    pg_connect_args = {}
+    parsed = urlparse(DATABASE_URL)
+    try:
+        # 解析主机名到 IPv4
+        addrs = socket.getaddrinfo(parsed.hostname, parsed.port or 5432, socket.AF_INET)
+        ipv4 = addrs[0][4][0]
+        pg_connect_args["hostaddr"] = ipv4
+    except Exception:
+        pass  # 解析失败则用默认行为
+    engine = create_engine(DATABASE_URL, connect_args=pg_connect_args if pg_connect_args else {})
 else:
     engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
