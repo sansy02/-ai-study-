@@ -55,7 +55,7 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
     getMe().then((u) => {
       if (u) setProfile({ grade: u.grade || "", major: u.major || "", subject: u.subject || "" })
     }).catch(() => {})
-    checkApiKeyStatus().then((s) => setKeyConfigured(s.configured)).catch(() => {})
+    checkApiKeyStatus().then((s) => setKeyConfigured(s.source === "user")).catch(() => {})
   }, [])
 
   // 保存自定义 API Key
@@ -342,64 +342,59 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
           </p>
         </div>
 
-        {/* API Key 面板 */}
-        {!keyConfigured ? (
-          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-            <p className="text-xs text-amber-700 font-medium mb-1">
-              🎓 每日免费使用 5 次 <span className="font-normal text-amber-500">（当前使用的为 DeepSeek V4 Pro）</span>
-            </p>
-            <p className="text-xs text-amber-500 mb-3">
-              用完 5 次后会使用你自己的 Key（若已填写），否则需等待北京时间 0:00 重置
-            </p>
-            {!showApiPanel ? (
-              <button
-                onClick={() => setShowApiPanel(true)}
-                className="text-xs text-amber-600 underline hover:text-amber-800"
-              >
-                添加自己的 API Key →
-              </button>
-            ) : (
-              <div>
-                <div className="flex gap-2 mb-2">
+        {/* 免费额度面板 — 始终显示 */}
+        <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+          <p className="text-xs text-amber-700 font-medium mb-1">
+            🎓 每日免费使用 5 次
+          </p>
+          <p className="text-xs text-amber-400">
+            当前使用为 DeepSeek V4 Pro
+          </p>
+        </div>
+
+        {/* 自己的 API Key — 始终显示 */}
+        <div className="mb-6 p-4 bg-white border border-gray-200 rounded-xl">
+          {keyConfigured ? (
+            <>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-green-600 font-medium">✅ 已绑定你的 API Key</span>
+                <button onClick={() => { setShowApiPanel(true); setApiKeyInput("") }}
+                        className="text-xs text-gray-400 hover:text-gray-600">更换</button>
+              </div>
+              <p className="text-xs text-gray-400">使用你自己的专属 Key，无限次使用</p>
+              {showApiPanel && (
+                <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
                   <input type="password" value={apiKeyInput}
                          onChange={(e) => setApiKeyInput(e.target.value)}
-                         placeholder="粘贴 DeepSeek API Key"
-                         className="flex-1 px-3 py-2 text-xs border border-amber-200 rounded-lg outline-none bg-white" />
+                         placeholder="输入新的 API Key"
+                         className="flex-1 px-3 py-2 text-xs border border-gray-200 rounded-lg outline-none" />
                   <button onClick={handleSaveKey} disabled={!apiKeyInput.trim() || savingKey}
-                          className="px-3 py-2 text-xs bg-amber-600 text-white rounded-lg hover:bg-amber-700
-                                     disabled:opacity-50">{savingKey ? "保存中..." : "确认"}</button>
+                          className="px-3 py-2 text-xs bg-gray-900 text-white rounded-lg disabled:opacity-50">
+                    {savingKey ? "保存中..." : "保存"}
+                  </button>
+                  <button onClick={() => { setShowApiPanel(false); setApiKeyInput("") }}
+                          className="text-xs text-gray-400 hover:text-gray-600">取消</button>
                 </div>
-                <p className="text-xs text-amber-400">
-                  如何获取？详见{' '}
-                  <a href="https://github.com/sansy02/-ai-study-" target="_blank" rel="noreferrer"
-                     className="underline">GitHub 说明 →</a>
-                </p>
+              )}
+            </>
+          ) : (
+            <>
+              <p className="text-xs text-gray-700 font-medium mb-1">🔑 使用你自己的 API Key</p>
+              <p className="text-xs text-gray-400 mb-3">绑定后不受每日次数限制，无限次使用</p>
+              <div className="flex gap-2">
+                <input type="password" value={apiKeyInput}
+                       onChange={(e) => setApiKeyInput(e.target.value)}
+                       placeholder="粘贴你的 DeepSeek API Key"
+                       className="flex-1 px-3 py-2 text-xs border border-gray-200 rounded-lg outline-none focus:border-gray-400" />
+                <button onClick={handleSaveKey} disabled={!apiKeyInput.trim() || savingKey}
+                        className="px-4 py-2 text-xs bg-gray-900 text-white rounded-lg hover:bg-gray-800
+                                   disabled:opacity-50 shrink-0">
+                  {savingKey ? "保存中..." : "保存 Key"}
+                </button>
               </div>
-            )}
-          </div>
-        ) : (
-          <div className="mb-6 flex items-center justify-between p-3 bg-green-50 border border-green-100 rounded-xl">
-            <span className="text-xs text-green-600">✅ 已使用你的 API Key · 无限制使用</span>
-            <button onClick={() => setShowApiPanel(true)}
-                    className="text-xs text-gray-400 hover:text-gray-600">更换</button>
-          </div>
-        )}
-        {keyConfigured && showApiPanel && (
-          <div className="mb-6 p-3 bg-gray-50 border border-gray-200 rounded-xl">
-            <div className="flex gap-2">
-              <input type="password" value={apiKeyInput}
-                     onChange={(e) => setApiKeyInput(e.target.value)}
-                     placeholder="输入新的 API Key"
-                     className="flex-1 px-3 py-2 text-xs border border-gray-200 rounded-lg outline-none bg-white" />
-              <button onClick={handleSaveKey} disabled={!apiKeyInput.trim() || savingKey}
-                      className="px-3 py-2 text-xs bg-gray-900 text-white rounded-lg disabled:opacity-50">
-                保存
-              </button>
-              <button onClick={() => { setShowApiPanel(false); setApiKeyInput("") }}
-                      className="text-xs text-gray-400 hover:text-gray-600">取消</button>
-            </div>
-          </div>
-        )}
+            </>
+          )}
+        </div>
 
         {/* 文件上传 */}
         <div className="mb-6">

@@ -2,35 +2,20 @@
 数据库连接和会话管理
 """
 import os
-import socket
-from urllib.parse import urlparse, urlunparse
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./aixue.db")
 
-# PostgreSQL 强制使用 IPv4 + 超时（Render 免费版不支持 IPv6 出站连接）
 if DATABASE_URL.startswith("postgresql"):
-    pg_connect_args = {"connect_timeout": 10}
-    parsed = urlparse(DATABASE_URL)
-    try:
-        # 解析主机名到 IPv4，设置超时避免卡死
-        socket.setdefaulttimeout(10)
-        addrs = socket.getaddrinfo(parsed.hostname, parsed.port or 5432, socket.AF_INET)
-        ipv4 = addrs[0][4][0]
-        pg_connect_args["hostaddr"] = ipv4
-    except Exception:
-        pass  # 解析失败则用默认行为
-    engine = create_engine(
-        DATABASE_URL,
-        connect_args=pg_connect_args,
-        pool_size=5,
-        max_overflow=10,
-        pool_pre_ping=True,
-    )
+    engine = create_engine(DATABASE_URL, connect_args={
+        "connect_timeout": 10,
+        "sslmode": "require",
+    })
 else:
     engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -50,7 +35,6 @@ def get_db():
 def init_db():
     """初始化数据库，创建所有表 + 执行迁移"""
     Base.metadata.create_all(bind=engine)
-    # 迁移：为已有 users 表添加 api_key 列（若不存在）
     try:
         with engine.connect() as conn:
             if DATABASE_URL.startswith("postgresql"):
@@ -59,4 +43,4 @@ def init_db():
                 conn.execute(text("ALTER TABLE users ADD COLUMN api_key VARCHAR(200)"))
             conn.commit()
     except Exception:
-        pass  # SQLite 中列已存在则忽略
+        pass
