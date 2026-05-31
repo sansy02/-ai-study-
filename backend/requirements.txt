@@ -5,6 +5,7 @@ pyjwt==2.10.1
 uvicorn[standard]==0.34.0
 python-multipart==0.0.19
 python-pptx==1.0.2
+python-docx==1.1.2
 PyPDF2==3.0.1
 sqlalchemy==2.0.36
 psycopg2-binary==2.9.10

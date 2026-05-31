@@ -38,6 +38,31 @@ def extract_text_from_pptx(file_bytes: bytes) -> str:
     return "\n\n".join(texts) if texts else ""
 
 
+def extract_text_from_docx(file_bytes: bytes) -> str:
+    """从 DOCX 文件提取文本"""
+    from docx import Document
+
+    try:
+        doc = Document(BytesIO(file_bytes))
+    except Exception:
+        raise ValueError("无法解析该 Word 文件。可能文件已损坏或使用了旧版 .doc 格式")
+
+    texts: list[str] = []
+    for para in doc.paragraphs:
+        text = para.text.strip()
+        if text:
+            texts.append(text)
+
+    # 也提取表格中的文本
+    for table in doc.tables:
+        for row in table.rows:
+            row_texts = [cell.text.strip() for cell in row.cells if cell.text.strip()]
+            if row_texts:
+                texts.append(" | ".join(row_texts))
+
+    return "\n".join(texts) if texts else ""
+
+
 def extract_text_from_pdf(file_bytes: bytes) -> str:
     """从 PDF 文件提取文本"""
     from PyPDF2 import PdfReader
@@ -70,9 +95,19 @@ def parse_file(filename: str, file_bytes: bytes) -> tuple[str, str]:
             "请用 PowerPoint 打开，点击「文件 → 另存为 → .pptx 格式」，然后重新上传。"
         )
 
+    elif filename_lower.endswith(".docx"):
+        text = extract_text_from_docx(file_bytes)
+        return text, "docx"
+
+    elif filename_lower.endswith(".doc"):
+        raise ValueError(
+            "不支持旧版 .doc 格式（97-2003 版本）。\n"
+            "请用 Word 打开，点击「文件 → 另存为 → .docx 格式」，然后重新上传。"
+        )
+
     elif filename_lower.endswith(".pdf"):
         text = extract_text_from_pdf(file_bytes)
         return text, "pdf"
 
     else:
-        raise ValueError(f"不支持的文件格式: {filename}。仅支持 PPTX、PDF 文件。")
+        raise ValueError(f"不支持的文件格式: {filename}。仅支持 PPTX、PDF、DOCX 文件。")

@@ -1,8 +1,9 @@
 """
 文件上传 & 文本解析 API
 """
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from services.parser_service import parse_file
+from routers.auth import get_current_user
 
 router = APIRouter(prefix="/api", tags=["upload"])
 
@@ -10,14 +11,14 @@ MAX_FILE_SIZE = 20 * 1024 * 1024  # 20MB
 
 
 @router.post("/upload")
-async def upload_file(file: UploadFile = File(...)):
+async def upload_file(file: UploadFile = File(...), user_id: int = Depends(get_current_user)):
     """上传 PPTX/PDF 文件，返回提取的文本内容"""
     # 检查文件扩展名
     filename = (file.filename or "").lower()
-    if not (filename.endswith(".pptx") or filename.endswith(".pdf")):
+    if not (filename.endswith(".pptx") or filename.endswith(".pdf") or filename.endswith(".docx")):
         raise HTTPException(
             status_code=400,
-            detail="仅支持 PPTX 和 PDF 文件。旧版 .ppt 格式请用 PowerPoint 另存为 .pptx 后重试。"
+            detail="仅支持 PPTX、PDF、DOCX 文件。旧版 .ppt/.doc 格式请先另存为新格式后重试。"
         )
     # 检查文件大小
     contents = await file.read()

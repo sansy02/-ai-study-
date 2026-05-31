@@ -109,6 +109,7 @@ class User(Base):
     major = Column(String(100), default="")
     subject = Column(String(100), default="")
     is_admin = Column(Boolean, default=False)
+    api_key = Column(String(200), nullable=True)          # 用户自己的 API Key
     login_attempts = Column(Integer, default=0)        # 登录失败次数
     locked_until = Column(DateTime, nullable=True)      # 锁定到期时间
     created_at = Column(DateTime, default=datetime.utcnow)

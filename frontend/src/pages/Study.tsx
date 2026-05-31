@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react"
 import {
   generateContent,
   generateVocabulary,
-  getLatestProfile,
+  getMe,
   toggleVocabFavorite,
   checkApiKeyStatus,
   setApiKey,
@@ -46,11 +46,14 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
   const [vocabWords, setVocabWords] = useState<VocabWord[]>([])
   const [generatingVocab, setGeneratingVocab] = useState(false)
 
+  // 移动端侧边栏控制
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
   // 加载学生画像
   const [profile, setProfile] = useState({ grade: "", major: "", subject: "" })
   useEffect(() => {
-    getLatestProfile().then((p) => {
-      if (p) setProfile({ grade: p.grade || "", major: p.major || "", subject: p.subject || "" })
+    getMe().then((u) => {
+      if (u) setProfile({ grade: u.grade || "", major: u.major || "", subject: u.subject || "" })
     }).catch(() => {})
     checkApiKeyStatus().then((s) => setKeyConfigured(s.configured)).catch(() => {})
   }, [])
@@ -74,8 +77,8 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
     const selectedFile = e.target.files?.[0]
     if (!selectedFile) return
     const ext = "." + selectedFile.name.split(".").pop()?.toLowerCase()
-    if (![".pptx", ".pdf"].includes(ext)) {
-      setError("仅支持 PPTX、PDF 文件。旧版 .ppt 请先转换为 .pptx 格式。"); return
+    if (![".pptx", ".pdf", ".docx"].includes(ext)) {
+      setError("仅支持 PPTX、PDF、DOCX 文件。旧版 .ppt/.doc 请先转换为新格式。"); return
     }
     setFile(selectedFile); setError(""); setUploading(true)
     try {
@@ -148,6 +151,16 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
       <div className="min-h-screen bg-white flex flex-col">
         {/* 顶部栏 */}
         <div className="border-b border-gray-100 px-4 py-3 flex items-center gap-4">
+          {/* 移动端汉堡菜单 */}
+          <button onClick={() => setSidebarOpen(!sidebarOpen)}
+                  className="md:hidden text-gray-500 hover:text-gray-800 p-0.5">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="2">
+              {sidebarOpen
+                ? <path d="M4 4l10 10M14 4L4 14" strokeLinecap="round" />
+                : <path d="M2 4h14M2 9h14M2 14h14" strokeLinecap="round" />
+              }
+            </svg>
+          </button>
           <button
             onClick={() => {
               setChapters([]); setOutline([]); setSessionId("")
@@ -159,18 +172,29 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
           </button>
           <h2 className="text-sm font-medium text-gray-800 truncate flex-1">{contentTitle}</h2>
           {preferences.show_english && (
-            <span className="text-xs text-gray-300">英语 🔛</span>
+            <span className="text-xs text-gray-300 hidden sm:inline">英语 🔛</span>
           )}
         </div>
 
+        {/* 移动端遮罩 */}
+        {sidebarOpen && (
+          <div className="md:hidden fixed inset-0 bg-black/20 z-40"
+               onClick={() => setSidebarOpen(false)} />
+        )}
+
         <div className="flex flex-1 overflow-hidden">
-          {/* 左侧大纲 */}
-          <aside className="w-56 border-r border-gray-100 overflow-y-auto p-3 shrink-0">
+          {/* 左侧大纲 — 移动端滑出 */}
+          <aside className={`
+            md:w-56 md:static md:translate-x-0 fixed left-0 top-[49px] bottom-0 z-50
+            w-64 border-r border-gray-100 bg-white overflow-y-auto p-3 shrink-0
+            transition-transform duration-200
+            ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+          `}>
             <p className="text-xs text-gray-400 mb-2 px-2">教学大纲</p>
             {outline.map((item, i) => (
               <button
                 key={i}
-                onClick={() => setActiveChapter(i)}
+                onClick={() => { setActiveChapter(i); setSidebarOpen(false) }}
                 className={`w-full text-left px-2 py-2 rounded-lg text-sm mb-1 transition-colors
                   ${i === activeChapter
                     ? "bg-gray-100 text-gray-900 font-medium"
@@ -184,7 +208,7 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
           </aside>
 
           {/* 中间内容区 */}
-          <main className="flex-1 overflow-y-auto p-6 max-w-3xl">
+          <main className="flex-1 overflow-y-auto p-4 md:p-6 max-w-3xl break-words">
             <h3 className="text-lg font-semibold text-gray-900 mb-6">{chapter.title}</h3>
             {chapter.sections.map((section, si) => (
               <div key={si} className="mb-8">
@@ -238,9 +262,9 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
             </div>
           </main>
 
-          {/* 右侧词汇区 */}
+          {/* 右侧词汇区（移动端隐藏） */}
           {preferences.show_english && (
-            <aside className="w-48 border-l border-gray-100 p-3 shrink-0 overflow-y-auto">
+            <aside className="hidden md:block w-48 border-l border-gray-100 p-3 shrink-0 overflow-y-auto">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-xs text-gray-400">📚 英语词汇</p>
               </div>
@@ -322,17 +346,17 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
         {!keyConfigured ? (
           <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
             <p className="text-xs text-amber-700 font-medium mb-1">
-              🎓 每日免费使用 5 次
+              🎓 每日免费使用 5 次 <span className="font-normal text-amber-500">（当前使用的为 DeepSeek V4 Pro）</span>
             </p>
             <p className="text-xs text-amber-500 mb-3">
-              更多次数请自行添加 API Key，或等待后续更新
+              用完 5 次后会使用你自己的 Key（若已填写），否则需等待北京时间 0:00 重置
             </p>
             {!showApiPanel ? (
               <button
                 onClick={() => setShowApiPanel(true)}
                 className="text-xs text-amber-600 underline hover:text-amber-800"
               >
-                添加 API Key →
+                添加自己的 API Key →
               </button>
             ) : (
               <div>
@@ -343,7 +367,7 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
                          className="flex-1 px-3 py-2 text-xs border border-amber-200 rounded-lg outline-none bg-white" />
                   <button onClick={handleSaveKey} disabled={!apiKeyInput.trim() || savingKey}
                           className="px-3 py-2 text-xs bg-amber-600 text-white rounded-lg hover:bg-amber-700
-                                     disabled:opacity-50">{savingKey ? "保存" : "确认"}</button>
+                                     disabled:opacity-50">{savingKey ? "保存中..." : "确认"}</button>
                 </div>
                 <p className="text-xs text-amber-400">
                   如何获取？详见{' '}
@@ -355,7 +379,7 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
           </div>
         ) : (
           <div className="mb-6 flex items-center justify-between p-3 bg-green-50 border border-green-100 rounded-xl">
-            <span className="text-xs text-green-600">✅ API Key 已配置 · 无限制使用</span>
+            <span className="text-xs text-green-600">✅ 已使用你的 API Key · 无限制使用</span>
             <button onClick={() => setShowApiPanel(true)}
                     className="text-xs text-gray-400 hover:text-gray-600">更换</button>
           </div>
@@ -377,23 +401,10 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
           </div>
         )}
 
-        {/* 话题输入 */}
-        <div className="mb-6">
-          <label className="block text-xs text-gray-400 mb-2">学习话题</label>
-          <input
-            type="text"
-            value={topic}
-            onChange={(e) => setTopic(e.target.value)}
-            placeholder='例如："机器学习基础"、"高等数学第二章"'
-            className="w-full px-4 py-3 text-sm text-gray-800 border border-gray-200 rounded-xl
-                       placeholder:text-gray-300 focus:outline-none focus:border-gray-400 transition-colors"
-          />
-        </div>
-
         {/* 文件上传 */}
-        <div className="mb-8">
+        <div className="mb-6">
           <label className="block text-xs text-gray-400 mb-2">
-            或者上传文件（PPTX / PDF）
+            上传文件（PPTX / PDF / DOCX）
           </label>
           {!file ? (
             <label
@@ -416,9 +427,9 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
                 <p className="text-sm text-gray-500 mb-1">
                   {uploading ? "解析中..." : dragOver ? "松开鼠标上传文件" : "点击上传或拖拽文件到此处"}
                 </p>
-                <p className="text-xs text-gray-300">支持 PPTX、PDF，最大 20MB</p>
+                <p className="text-xs text-gray-300">支持 PPTX、PDF、DOCX，最大 20MB</p>
               </div>
-              <input ref={fileInputRef} type="file" accept=".pptx,.pdf"
+              <input ref={fileInputRef} type="file" accept=".pptx,.pdf,.docx"
                      onChange={handleFileChange} className="hidden" disabled={uploading} />
             </label>
           ) : (
@@ -435,6 +446,19 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
               <button onClick={removeFile} className="text-gray-400 hover:text-gray-600 text-sm">移除</button>
             </div>
           )}
+        </div>
+
+        {/* 话题输入（可选） */}
+        <div className="mb-8">
+          <label className="block text-xs text-gray-400 mb-2">学习话题（可选）</label>
+          <input
+            type="text"
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            placeholder='例如："机器学习基础"、"高等数学第二章"'
+            className="w-full px-4 py-3 text-sm text-gray-800 border border-gray-200 rounded-xl
+                       placeholder:text-gray-300 focus:outline-none focus:border-gray-400 transition-colors"
+          />
         </div>
 
         {textPreview && (

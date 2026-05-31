@@ -1,13 +1,14 @@
 """
 系统设置 API — API Key 管理等
-持久化到数据库，服务重启不丢失
+每人可设置自己的 API Key；管理员 Key 存环境变量 AI_API_KEY
 """
 import os
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from database import get_db
-from models.models import AppSetting
+from database import get_db, SessionLocal
+from models.models import User
+from routers.auth import get_current_user
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
 
@@ -17,41 +18,48 @@ class ApiKeyRequest(BaseModel):
 
 
 @router.post("/api-key")
-async def set_api_key(req: ApiKeyRequest, db: Session = Depends(get_db)):
-    """设置 API Key（持久化到数据库）"""
-    setting = db.query(AppSetting).filter(AppSetting.key == "ai_api_key").first()
-    if setting:
-        setting.value = req.api_key.strip()
-    else:
-        setting = AppSetting(key="ai_api_key", value=req.api_key.strip())
-        db.add(setting)
-    db.commit()
-    return {"status": "ok", "message": "API Key 已保存"}
+async def set_api_key(req: ApiKeyRequest, user_id: int = Depends(get_current_user), db: Session = Depends(get_db)):
+    """设置当前用户的 API Key"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if user:
+        user.api_key = req.api_key.strip()
+        db.commit()
+    return {"status": "ok", "message": "API Key 已保存到你的账号"}
 
 
 @router.get("/api-key/status")
-async def check_api_key(db: Session = Depends(get_db)):
-    """检查 API Key 是否已配置"""
+async def check_api_key(user_id: int = Depends(get_current_user), db: Session = Depends(get_db)):
+    """检查用户是否配置了 API Key（自己的或管理员的）"""
+    user = db.query(User).filter(User.id == user_id).first()
+    has_own_key = bool(user and user.api_key)
     env_key = os.getenv("AI_API_KEY", "")
-    db_setting = db.query(AppSetting).filter(AppSetting.key == "ai_api_key").first()
-    db_key = db_setting.value if db_setting else ""
-    has_key = bool(env_key and env_key != "your-api-key-here") or bool(db_key)
-    source = "env" if (env_key and env_key != "your-api-key-here") else ("database" if db_key else "none")
-    return {"configured": has_key, "source": source}
+    has_admin_key = bool(env_key and env_key != "your-api-key-here")
+    return {
+        "configured": has_own_key or has_admin_key,
+        "source": "user" if has_own_key else ("admin" if has_admin_key else "none"),
+    }
 
 
-def get_api_key() -> str:
-    """获取当前有效的 API Key（优先环境变量，其次数据库）"""
+def get_api_key(user_id: int | None = None) -> str:
+    """
+    获取 API Key 优先级：
+    1. 用户自己设置的 Key（存在 User 表里）
+    2. 管理员 Key（环境变量 AI_API_KEY）
+    3. 报错
+    """
+    # 先查用户自己的 Key
+    if user_id:
+        db = SessionLocal()
+        try:
+            user = db.query(User).filter(User.id == user_id).first()
+            if user and user.api_key:
+                return user.api_key
+        finally:
+            db.close()
+
+    # 再查管理员 Key
     env_key = os.getenv("AI_API_KEY", "")
     if env_key and env_key != "your-api-key-here":
         return env_key
-    # 从数据库读取（需要手动创建 session）
-    from database import SessionLocal
-    db = SessionLocal()
-    try:
-        setting = db.query(AppSetting).filter(AppSetting.key == "ai_api_key").first()
-        if setting and setting.value:
-            return setting.value
-    finally:
-        db.close()
+
     return "your-api-key-here"

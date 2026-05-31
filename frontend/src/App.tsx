@@ -5,9 +5,10 @@ import Study from "./pages/Study"
 import Practice from "./pages/Practice"
 import WrongBook from "./pages/WrongBook"
 import Profile from "./pages/Profile"
+import About from "./pages/About"
 import { hasToken, clearToken, getMe, type Preferences } from "./api"
 
-type Page = "login" | "welcome" | "study" | "practice" | "wrongbook" | "profile"
+type Page = "login" | "welcome" | "study" | "practice" | "wrongbook" | "profile" | "about"
 
 function App() {
   const [page, setPage] = useState<Page>("login")
@@ -77,8 +78,8 @@ function App() {
   const NavBar = () => (
     <div className="border-b border-gray-100 px-4 py-2.5 flex items-center gap-3 bg-white">
       <span className="text-sm font-medium text-gray-800">📚 爱学</span>
+      <button onClick={() => setPage("about")} className="text-xs text-gray-400 hover:text-gray-600">关于我</button>
       <div className="flex-1" />
-      <button onClick={() => setPage("study")} className="text-xs text-gray-400 hover:text-gray-600">学习</button>
       <button onClick={() => handleNavigate("wrongbook")} className="text-xs text-gray-400 hover:text-gray-600">错题本</button>
       <button onClick={() => setPage("profile")} className="text-xs text-gray-400 hover:text-gray-600">我的</button>
     </div>
@@ -100,6 +101,8 @@ function App() {
       return <WrongBook onNavigate={handleNavigate} />
     case "profile":
       return <Profile onNavigate={handleNavigate} onLogout={handleLogout} />
+    case "about":
+      return <About onNavigate={handleNavigate} />
     default:
       return null
   }

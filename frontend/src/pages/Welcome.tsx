@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import FeatureToggle from "../components/FeatureToggle"
 import SelectInput from "../components/SelectInput"
-import { saveProfile, getLatestProfile, savePreferences, getLatestPreferences, type Preferences } from "../api"
+import { updateMe, getMe, savePreferences, getLatestPreferences, type Preferences } from "../api"
 
 interface WelcomeProps {
   onStart: (prefs: Preferences) => void
@@ -44,14 +44,14 @@ export default function Welcome({ onStart }: WelcomeProps) {
   useEffect(() => {
     async function load() {
       try {
-        const [profile, prefs] = await Promise.all([
-          getLatestProfile(),
+        const [user, prefs] = await Promise.all([
+          getMe(),
           getLatestPreferences(),
         ])
-        if (profile) {
-          setGrade(profile.grade || "")
-          setMajor(profile.major || "")
-          setSubject(profile.subject || "")
+        if (user) {
+          setGrade(user.grade || "")
+          setMajor(user.major || "")
+          setSubject(user.subject || "")
         }
         if (prefs) {
           setShowEnglish(prefs.show_english)
@@ -79,7 +79,7 @@ export default function Welcome({ onStart }: WelcomeProps) {
     try {
       // 并行保存画像和偏好
       await Promise.all([
-        saveProfile({ grade, major, subject }),
+        updateMe({ grade, major, subject }),
         savePreferences(prefs),
       ])
     } catch {
@@ -134,7 +134,7 @@ export default function Welcome({ onStart }: WelcomeProps) {
               onChange={setMajor}
             />
             <SelectInput
-              label="学科方向"
+              label="专业课程"
               value={subject}
               options={SUBJECT_OPTIONS}
               placeholder="今天想学什么方向？"
@@ -181,6 +181,10 @@ export default function Welcome({ onStart }: WelcomeProps) {
         >
           开始学习 →
         </button>
+
+        <p className="text-center text-xs text-gray-300 mt-8">
+          由 <span className="text-gray-400 font-medium">sansy02</span> 开发
+        </p>
       </div>
     </div>
   )

@@ -104,7 +104,7 @@ export default function Profile({ onNavigate, onLogout }: ProfileProps) {
                        placeholder="专业" className="flex-1 px-2 py-1.5 text-xs border border-gray-200 rounded-lg" />
               </div>
               <input value={editSubject} onChange={(e) => setEditSubject(e.target.value)}
-                     placeholder="学科方向" className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded-lg" />
+                     placeholder="专业课程" className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded-lg" />
               <div className="flex gap-2">
                 <button onClick={handleSaveProfile} className="text-xs px-3 py-1 bg-gray-900 text-white rounded-lg">保存</button>
                 <button onClick={() => setEditing(false)} className="text-xs px-3 py-1 text-gray-400">取消</button>

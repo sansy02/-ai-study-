@@ -14,8 +14,15 @@ export default function Login({ onLogin }: LoginProps) {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [warming, setWarming] = useState(true)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [rememberMe, setRememberMe] = useState(true)
 
-  // 页面打开时预热后端（唤醒 Render 休眠）
+  // 页面打开时预热后端 + 恢复记住的邮箱
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("savedEmail")
+    if (savedEmail) setEmail(savedEmail)
+  }, [])
   useEffect(() => {
     fetch(`${import.meta.env.VITE_API_URL || "/api"}/health`)
       .then(() => setWarming(false))
@@ -50,6 +57,11 @@ export default function Login({ onLogin }: LoginProps) {
       if (!res.ok) throw new Error(data.detail || "请求失败")
 
       localStorage.setItem("token", data.token)
+      if (rememberMe) {
+        localStorage.setItem("savedEmail", email)
+      } else {
+        localStorage.removeItem("savedEmail")
+      }
       onLogin(data.token, data.user)
     } catch (err: any) {
       setError(err.message)
@@ -78,18 +90,32 @@ export default function Login({ onLogin }: LoginProps) {
           </div>
           <div>
             <label className="block text-xs text-gray-400 mb-1">密码</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-                   placeholder="至少6位密码"
-                   className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-gray-400" />
+            <div className="relative">
+              <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)}
+                     placeholder="至少6位密码"
+                     className="w-full px-3 py-2.5 pr-10 text-sm border border-gray-200 rounded-xl outline-none focus:border-gray-400" />
+              <button type="button" onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-base"
+                      tabIndex={-1}>
+                {showPassword ? "🙈" : "👁"}
+              </button>
+            </div>
           </div>
 
           {mode === "register" && (
             <>
               <div>
                 <label className="block text-xs text-gray-400 mb-1">确认密码</label>
-                <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
-                       placeholder="再次输入密码"
-                       className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-gray-400" />
+                <div className="relative">
+                  <input type={showConfirmPassword ? "text" : "password"} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
+                         placeholder="再次输入密码"
+                         className="w-full px-3 py-2.5 pr-10 text-sm border border-gray-200 rounded-xl outline-none focus:border-gray-400" />
+                  <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-base"
+                          tabIndex={-1}>
+                    {showConfirmPassword ? "🙈" : "👁"}
+                  </button>
+                </div>
               </div>
               <div>
                 <label className="block text-xs text-gray-400 mb-1">年级（可选）</label>
@@ -115,6 +141,14 @@ export default function Login({ onLogin }: LoginProps) {
           </div>
         )}
 
+        {mode === "login" && (
+          <label className="flex items-center gap-2 mb-4 cursor-pointer">
+            <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)}
+                   className="w-3.5 h-3.5 rounded border-gray-300 text-gray-900 accent-gray-900" />
+            <span className="text-xs text-gray-400">记住登录状态</span>
+          </label>
+        )}
+
         <button onClick={handleSubmit} disabled={loading}
                 className="w-full py-3 bg-gray-900 text-white text-sm font-medium rounded-xl
                            hover:bg-gray-800 disabled:opacity-50 transition-colors">
@@ -127,6 +161,10 @@ export default function Login({ onLogin }: LoginProps) {
                   className="text-gray-800 underline ml-1">
             {mode === "login" ? "注册" : "登录"}
           </button>
+        </p>
+
+        <p className="text-center text-xs text-gray-300 mt-8">
+          由 <span className="text-gray-400 font-medium">sansy02</span> 开发
         </p>
       </div>
     </div>

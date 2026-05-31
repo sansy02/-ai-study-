@@ -74,18 +74,40 @@ async def generate_content(request: Request, req: GenerateRequest, db: Session =
     if not ai_input.strip():
         raise HTTPException(status_code=400, detail="请提供学习话题或上传文件")
 
+    # 字数上限检查（10000字）
+    MAX_INPUT_CHARS = 10000
+    if len(ai_input) > MAX_INPUT_CHARS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"内容超出字数限制（最多{MAX_INPUT_CHARS}字），当前{len(ai_input)}字。请精简后重试，或等待后续更新支持更大文档。"
+        )
+
     # 内容质量预检
     if req.source_text.strip():
         valid, reason = validate_content(ai_input)
         if not valid:
             raise HTTPException(status_code=400, detail=f"内容未通过审核: {reason}")
 
-    # 每日免费次数检查（5次/天，管理员配了 API Key 则无限制）
+    # 每日免费次数检查
+    # - 用户有自己的 API Key → 不限制
+    # - 用户没有自己的 Key，但有管理员 Key → 每天 5 次免费
+    # - 都没有 → 报错
     from routers.settings import get_api_key
-    from datetime import datetime, timedelta
+    from datetime import datetime, timedelta, timezone
     admin_key = get_api_key()
-    if admin_key == "your-api-key-here":
-        today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    user_key = get_api_key(user_id)
+    has_own_key = (user_key != admin_key)  # 用户设了自己的 Key 则不同
+    if has_own_key:
+        pass  # 用户用自己的 Key，无限制
+    elif admin_key == "your-api-key-here":
+        raise HTTPException(
+            status_code=400,
+            detail="AI API Key 未配置。请联系管理员或自行在前端设置中填入 API Key。获取 Key: https://platform.deepseek.com"
+        )
+    else:
+        # 用管理员 Key，每天 5 次限制，北京时间 0:00 刷新
+        CST = timezone(timedelta(hours=8))
+        today_start = datetime.now(CST).replace(hour=0, minute=0, second=0, microsecond=0)
         daily_count = db.query(StudySession).filter(
             StudySession.user_id == user_id,
             StudySession.created_at >= today_start
@@ -93,7 +115,7 @@ async def generate_content(request: Request, req: GenerateRequest, db: Session =
         if daily_count >= 5:
             raise HTTPException(
                 status_code=429,
-                detail="今日免费次数已用完（5次/天）。请等待明日重置，或自行配置 API Key。详见 https://github.com/sansy02/-ai-study-"
+                detail="今日免费次数已用完（5次/天），北京时间 0:00 重置。你也可以在前端页面中输入自己的 DeepSeek API Key 继续使用。获取 Key: https://platform.deepseek.com"
             )
 
     # 保存学生画像
@@ -118,7 +140,7 @@ async def generate_content(request: Request, req: GenerateRequest, db: Session =
         topic = json.loads(cached.outline)[0].get("title", req.topic) if cached.outline else req.topic
         session = StudySession(
             session_id=session_id, topic=cached.topic or req.topic,
-            source_type=req.source_type, source_text=ai_input[:5000],
+            source_type=req.source_type, source_text=ai_input[:MAX_INPUT_CHARS],
             outline=cached.outline, content=cached.content,
             profile_id=profile.id, user_id=user_id,
         )
@@ -138,6 +160,7 @@ async def generate_content(request: Request, req: GenerateRequest, db: Session =
             grade=req.grade,
             major=req.major,
             subject=req.subject,
+            user_id=user_id,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -162,7 +185,7 @@ async def generate_content(request: Request, req: GenerateRequest, db: Session =
         session_id=session_id,
         topic=result.get("topic", req.topic),
         source_type=req.source_type,
-        source_text=ai_input[:5000],
+        source_text=ai_input[:MAX_INPUT_CHARS],
         outline=json.dumps(result.get("outline", []), ensure_ascii=False),
         content=json.dumps(result.get("chapters", []), ensure_ascii=False),
         profile_id=profile.id,

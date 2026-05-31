@@ -7,12 +7,13 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models.models import StudySession, Vocabulary
 from services.ai_service import generate_vocabulary
+from routers.auth import get_current_user
 
 router = APIRouter(prefix="/api/vocabulary", tags=["vocabulary"])
 
 
 @router.post("/generate/{session_id}")
-async def gen_vocabulary(session_id: str, db: Session = Depends(get_db)):
+async def gen_vocabulary(session_id: str, user_id: int = Depends(get_current_user), db: Session = Depends(get_db)):
     """为指定学习记录生成英语词汇"""
     session = db.query(StudySession).filter(StudySession.session_id == session_id).first()
     if not session:
@@ -29,7 +30,6 @@ async def gen_vocabulary(session_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="教学内容为空")
 
     # 获取学生画像年级
-    profile = session.profile_id and db.query(StudySession).first()  # TODO: 改进获取profile
     grade = ""
     if session.profile_id:
         from models.models import StudentProfile
@@ -39,7 +39,7 @@ async def gen_vocabulary(session_id: str, db: Session = Depends(get_db)):
 
     # 调用 AI 生成
     try:
-        words = await generate_vocabulary(content_text, grade=grade)
+        words = await generate_vocabulary(content_text, grade=grade, user_id=user_id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"AI 生成失败: {str(e)}")
 
@@ -64,7 +64,7 @@ async def gen_vocabulary(session_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/{session_id}")
-async def get_vocabulary(session_id: str, db: Session = Depends(get_db)):
+async def get_vocabulary(session_id: str, user_id: int = Depends(get_current_user), db: Session = Depends(get_db)):
     """获取已有词汇"""
     words = db.query(Vocabulary).filter(Vocabulary.session_id == session_id).all()
     return {
