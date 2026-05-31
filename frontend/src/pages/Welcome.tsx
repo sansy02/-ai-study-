@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react"
-import FeatureToggle from "../components/FeatureToggle"
 import SelectInput from "../components/SelectInput"
-import { updateMe, getMe, savePreferences, getLatestPreferences, type Preferences } from "../api"
+import { updateMe, getMe, type Preferences } from "../api"
 
 interface WelcomeProps {
   onStart: (prefs: Preferences) => void
@@ -34,56 +33,37 @@ export default function Welcome({ onStart }: WelcomeProps) {
   const [major, setMajor] = useState("")
   const [subject, setSubject] = useState("")
 
-  const [showEnglish, setShowEnglish] = useState(true)
-  const [showPractice, setShowPractice] = useState(true)
-  const [showWrongBook, setShowWrongBook] = useState(true)
-
   const [loading, setLoading] = useState(true)
+  const [starting, setStarting] = useState(false)
 
   // 加载上次保存的设置
   useEffect(() => {
-    async function load() {
-      try {
-        const [user, prefs] = await Promise.all([
-          getMe(),
-          getLatestPreferences(),
-        ])
+    getMe()
+      .then((user) => {
         if (user) {
           setGrade(user.grade || "")
           setMajor(user.major || "")
           setSubject(user.subject || "")
         }
-        if (prefs) {
-          setShowEnglish(prefs.show_english)
-          setShowPractice(prefs.show_practice)
-          setShowWrongBook(prefs.show_wrong_book)
-        }
-      } catch {
-        // 后端未连接时使用默认值
-      } finally {
-        setLoading(false)
-      }
-    }
-    load()
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
   }, [])
 
   // 点击开始学习
   const handleStart = async () => {
+    setStarting(true)
     const prefs: Preferences = {
       id: null,
-      show_english: showEnglish,
-      show_practice: showPractice,
-      show_wrong_book: showWrongBook,
+      show_english: true,
+      show_practice: true,
+      show_wrong_book: true,
     }
 
     try {
-      // 并行保存画像和偏好
-      await Promise.all([
-        updateMe({ grade, major, subject }),
-        savePreferences(prefs),
-      ])
+      await updateMe({ grade, major, subject })
     } catch {
-      // 保存失败也继续，使用本地状态
+      // 保存失败也继续
     }
 
     onStart(prefs)
@@ -146,40 +126,21 @@ export default function Welcome({ onStart }: WelcomeProps) {
         {/* 分割线 */}
         <div className="border-t border-gray-100 mb-6" />
 
-        {/* 功能开关 */}
-        <div className="mb-8">
-          <p className="text-xs text-gray-400 mb-3 text-center">
-            功能开关（可随时更改）
-          </p>
-          <div className="divide-y divide-gray-50">
-            <FeatureToggle
-              label="英语词汇"
-              description="学习时展示专业英语词汇"
-              enabled={showEnglish}
-              onChange={setShowEnglish}
-            />
-            <FeatureToggle
-              label="练习系统"
-              description="每章学完后提供配套练习"
-              enabled={showPractice}
-              onChange={setShowPractice}
-            />
-            <FeatureToggle
-              label="错题本"
-              description="自动收集错题方便复习"
-              enabled={showWrongBook}
-              onChange={setShowWrongBook}
-            />
-          </div>
-        </div>
-
         {/* 开始按钮 */}
         <button
           onClick={handleStart}
+          disabled={starting}
           className="w-full py-3 bg-gray-900 text-white text-sm font-medium rounded-xl
-                     hover:bg-gray-800 active:bg-gray-950 transition-colors"
+                     hover:bg-gray-800 active:bg-gray-950 transition-colors disabled:opacity-70"
         >
-          开始学习 →
+          {starting ? (
+            <span className="inline-flex items-center gap-2">
+              <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              正在加载...
+            </span>
+          ) : (
+            "开始学习 →"
+          )}
         </button>
 
         <p className="text-center text-xs text-gray-300 mt-8">

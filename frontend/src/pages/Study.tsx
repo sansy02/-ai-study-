@@ -7,11 +7,13 @@ import {
   toggleVocabFavorite,
   checkApiKeyStatus,
   setApiKey,
+  savePreferences,
   type Preferences,
   type OutlineItem,
   type Chapter,
   type VocabWord,
 } from "../api"
+import FeatureToggle from "../components/FeatureToggle"
 
 interface StudyProps {
   preferences: Preferences
@@ -61,6 +63,23 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
   const [exercisesReady, setExercisesReady] = useState(false)
   const [preGenerating, setPreGenerating] = useState(false)
 
+  // 功能开关
+  const [showEnglish, setShowEnglish] = useState(showEnglish)
+  const [showPractice, setShowPractice] = useState(showPractice)
+  const [showWrongBook, setShowWrongBook] = useState(preferences.show_wrong_book)
+
+  const handleToggle = async (key: string, val: boolean) => {
+    const updated = {
+      show_english: key === "eng" ? val : showEnglish,
+      show_practice: key === "prc" ? val : showPractice,
+      show_wrong_book: key === "wb" ? val : showWrongBook,
+    }
+    if (key === "eng") setShowEnglish(val)
+    if (key === "prc") setShowPractice(val)
+    if (key === "wb") setShowWrongBook(val)
+    try { await savePreferences(updated) } catch {}
+  }
+
   // 加载学生画像
   const [profile, setProfile] = useState({ grade: "", major: "", subject: "" })
   useEffect(() => {
@@ -72,7 +91,7 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
 
   // 学到倒数第二章时，后台预生成练习题
   useEffect(() => {
-    if (!sessionId || chapters.length < 3 || !preferences.show_practice) return
+    if (!sessionId || chapters.length < 3 || !showPractice) return
     if (activeChapter === chapters.length - 2 && !exercisesReady && !preGenerating) {
       setPreGenerating(true)
       generateExercises(sessionId)
@@ -80,7 +99,7 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
         .catch(() => {})
         .finally(() => setPreGenerating(false))
     }
-  }, [activeChapter, chapters.length, sessionId, exercisesReady, preGenerating, preferences.show_practice])
+  }, [activeChapter, chapters.length, sessionId, exercisesReady, preGenerating, showPractice])
 
   // 保存自定义 API Key
   const handleSaveKey = async () => {
@@ -154,7 +173,7 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
       setActiveChapter(0)
 
       // 如果开启了英语词汇，自动生成
-      if (preferences.show_english) {
+      if (showEnglish) {
         setGeneratingVocab(true)
         generateVocabulary(result.session_id)
           .then((v) => setVocabWords(v.words))
@@ -195,7 +214,7 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
             ← 返回
           </button>
           <h2 className="text-sm font-medium text-gray-800 truncate flex-1">{contentTitle}</h2>
-          {preferences.show_english && (
+          {showEnglish && (
             <button onClick={() => setVocabVisible(!vocabVisible)}
                     className={`text-xs px-2 py-1 rounded-lg transition-colors
                       ${vocabVisible ? 'bg-gray-100 text-gray-700' : 'text-gray-400 hover:text-gray-600'}`}>
@@ -290,7 +309,7 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
                 >
                   下一章 →
                 </button>
-              ) : preferences.show_practice ? (
+              ) : showPractice ? (
                 <button
                   onClick={() => onNavigate("practice", sessionId)}
                   className="text-sm text-white bg-gray-900 px-4 py-1.5 rounded-lg hover:bg-gray-800"
@@ -309,7 +328,7 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
           </main>
 
           {/* 右侧词汇区 — 默认隐藏，点右上角按钮滑出 */}
-          {preferences.show_english && vocabVisible && (
+          {showEnglish && vocabVisible && (
             <aside className="border-l border-gray-100 bg-white shrink-0 overflow-hidden transition-all duration-300 w-48 md:w-56">
               <div className="h-full max-h-[calc(100vh-97px)] overflow-y-auto p-3">
                 <div className="flex items-center justify-between mb-3">
@@ -499,6 +518,28 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
               <button onClick={removeFile} className="text-gray-400 hover:text-gray-600 text-sm">移除</button>
             </div>
           )}
+        </div>
+
+        {/* 功能开关 — 一行两个 */}
+        <div className="mb-6">
+          <p className="text-xs text-gray-400 mb-2">功能开关</p>
+          <div className="grid grid-cols-2 gap-2">
+            <FeatureToggle
+              label="英语词汇"
+              enabled={showEnglish}
+              onChange={(v) => handleToggle("eng", v)}
+            />
+            <FeatureToggle
+              label="练习系统"
+              enabled={showPractice}
+              onChange={(v) => handleToggle("prc", v)}
+            />
+            <FeatureToggle
+              label="错题本"
+              enabled={showWrongBook}
+              onChange={(v) => handleToggle("wb", v)}
+            />
+          </div>
         </div>
 
         {/* 话题输入（可选） */}
