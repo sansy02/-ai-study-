@@ -1,5 +1,5 @@
 /**
- * API 请求工具
+ * API 请求工具 — 带内存缓存，同一会话不重复请求
  */
 
 // 开发环境用 Vite 代理，生产环境用完整后端地址
@@ -9,10 +9,25 @@ function getToken(): string {
   return localStorage.getItem("token") || ""
 }
 
+// 内存缓存（页面切换不丢失）
+const cache = new Map<string, { data: any; time: number }>()
+const CACHE_TTL = 60000 // 缓存 60 秒
+
 async function request<T>(url: string, options?: RequestInit, retryCount = 0): Promise<T> {
   const token = getToken()
   const headers: Record<string, string> = { "Content-Type": "application/json" }
   if (token) headers["Authorization"] = `Bearer ${token}`
+
+  // GET 请求走缓存
+  const isGet = !options?.method || options.method === "GET"
+  const cacheKey = `${options?.method || "GET"}:${url}`
+  if (isGet && cache.has(cacheKey)) {
+    const entry = cache.get(cacheKey)!
+    if (Date.now() - entry.time < CACHE_TTL) {
+      return entry.data as T
+    }
+    cache.delete(cacheKey)
+  }
 
   const res = await fetch(`${BASE}${url}`, { headers, ...options })
   if (!res.ok) {
@@ -36,7 +51,14 @@ async function request<T>(url: string, options?: RequestInit, retryCount = 0): P
     await new Promise((r) => setTimeout(r, 5000))
     return request(url, options, retryCount + 1)
   }
-  return JSON.parse(text)
+  const data = JSON.parse(text)
+  if (isGet) cache.set(cacheKey, { data, time: Date.now() })
+  return data
+}
+
+// 清除缓存（POST/PUT 等修改操作后调用）
+export function clearCache() {
+  cache.clear()
 }
 
 // ---- 类型 ----
