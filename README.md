@@ -1,4 +1,4 @@
-# 📚 爱学助手：打开连接即可使用 https://ai-study-sooty-nu.vercel.app/
+# 📚 爱学助手：打开连接即可使用https://love-to-self-study.vercel.app/
 
 上传 PPT 或输入话题，AI 自动生成教学内容、英语高频词汇和配套练习题。
 
