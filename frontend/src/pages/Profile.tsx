@@ -1,19 +1,38 @@
 import { useState, useEffect } from "react"
+import FeatureToggle from "../components/FeatureToggle"
 import {
   getMe, updateMe, changePassword, getUserStats, getUserVocabulary,
-  type UserInfo, type UserStats, type VocabWord,
+  savePreferences, type UserInfo, type UserStats, type VocabWord, type Preferences,
 } from "../api"
 
 interface ProfileProps {
   onNavigate: (page: string) => void
   onLogout: () => void
+  preferences: Preferences
 }
 
-export default function Profile({ onNavigate, onLogout }: ProfileProps) {
+export default function Profile({ onNavigate, onLogout, preferences }: ProfileProps) {
   const [user, setUser] = useState<UserInfo | null>(null)
   const [stats, setStats] = useState<UserStats | null>(null)
   const [words, setWords] = useState<VocabWord[]>([])
   const [loading, setLoading] = useState(true)
+
+  // 功能开关
+  const [showEnglish, setShowEnglish] = useState(preferences.show_english)
+  const [showPractice, setShowPractice] = useState(preferences.show_practice)
+  const [showWrongBook, setShowWrongBook] = useState(preferences.show_wrong_book)
+
+  const handleToggle = async (key: string, val: boolean) => {
+    const updated = {
+      show_english: key === "english" ? val : showEnglish,
+      show_practice: key === "practice" ? val : showPractice,
+      show_wrong_book: key === "wrongbook" ? val : showWrongBook,
+    }
+    if (key === "english") setShowEnglish(val)
+    if (key === "practice") setShowPractice(val)
+    if (key === "wrongbook") setShowWrongBook(val)
+    try { await savePreferences(updated) } catch {}
+  }
 
   // 编辑状态
   const [editing, setEditing] = useState(false)
@@ -162,6 +181,31 @@ export default function Profile({ onNavigate, onLogout }: ProfileProps) {
             </div>
           </div>
         )}
+
+        {/* 功能开关 */}
+        <div className="border-t border-gray-100 pt-6 mb-6">
+          <p className="text-xs text-gray-400 mb-3">功能开关</p>
+          <div className="space-y-1">
+            <FeatureToggle
+              label="英语词汇"
+              description="学习时展示专业英语词汇"
+              enabled={showEnglish}
+              onChange={(v) => handleToggle("english", v)}
+            />
+            <FeatureToggle
+              label="练习系统"
+              description="每章学完后提供配套练习"
+              enabled={showPractice}
+              onChange={(v) => handleToggle("practice", v)}
+            />
+            <FeatureToggle
+              label="错题本"
+              description="自动收集错题方便复习"
+              enabled={showWrongBook}
+              onChange={(v) => handleToggle("wrongbook", v)}
+            />
+          </div>
+        </div>
 
         {/* 修改密码 */}
         <div className="border-t border-gray-100 pt-6 mb-6">

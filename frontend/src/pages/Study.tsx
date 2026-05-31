@@ -49,6 +49,13 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
   // 移动端侧边栏控制
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
+  // 大纲/词汇折叠
+  const [outlineCollapsed, setOutlineCollapsed] = useState(false)
+  const [vocabCollapsed, setVocabCollapsed] = useState(false)
+
+  // 已收藏词汇ID
+  const [favoritedIds, setFavoritedIds] = useState<Set<number>>(new Set())
+
   // 加载学生画像
   const [profile, setProfile] = useState({ grade: "", major: "", subject: "" })
   useEffect(() => {
@@ -182,15 +189,21 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
                onClick={() => setSidebarOpen(false)} />
         )}
 
-        <div className="flex flex-1 overflow-hidden">
-          {/* 左侧大纲 — 移动端滑出 */}
+        <div className="flex flex-1">
+          {/* 左侧大纲 */}
           <aside className={`
-            md:w-56 md:static md:translate-x-0 fixed left-0 top-[49px] bottom-0 z-50
-            w-64 border-r border-gray-100 bg-white overflow-y-auto p-3 shrink-0
-            transition-transform duration-200
-            ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+            border-r border-gray-100 bg-white overflow-y-auto p-3 shrink-0 transition-all duration-200
+            ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+            md:translate-x-0 md:static fixed left-0 top-[49px] bottom-0 z-50 w-64
+            ${outlineCollapsed ? 'md:w-0 md:p-0 md:border-r-0 md:overflow-hidden' : 'md:w-56'}
           `}>
-            <p className="text-xs text-gray-400 mb-2 px-2">教学大纲</p>
+            <div className="flex items-center justify-between mb-2 px-2">
+              <p className={`text-xs text-gray-400 ${outlineCollapsed ? 'md:hidden' : ''}`}>教学大纲</p>
+              <button onClick={() => setOutlineCollapsed(!outlineCollapsed)}
+                      className="text-xs text-gray-300 hover:text-gray-500">
+                {outlineCollapsed ? '▶' : '◀'}
+              </button>
+            </div>
             {outline.map((item, i) => (
               <button
                 key={i}
@@ -207,13 +220,13 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
             ))}
           </aside>
 
-          {/* 中间内容区 */}
-          <main className="flex-1 overflow-y-auto p-4 md:p-6 max-w-3xl break-words">
+          {/* 中间内容区 — 高度由章节内容决定 */}
+          <main className="flex-1 p-4 md:p-6 max-w-3xl transition-all duration-200">
             <h3 className="text-lg font-semibold text-gray-900 mb-6">{chapter.title}</h3>
             {chapter.sections.map((section, si) => (
               <div key={si} className="mb-8">
                 <h4 className="text-sm font-medium text-gray-800 mb-3">{section.heading}</h4>
-                <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap mb-3">
+                <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap mb-3 break-words">
                   {section.body}
                 </p>
                 {section.example && (
@@ -262,46 +275,66 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
             </div>
           </main>
 
-          {/* 右侧词汇区（移动端隐藏） */}
+          {/* 右侧词汇区 — 移动端隐藏，可折叠 */}
           {preferences.show_english && (
-            <aside className="hidden md:block w-48 border-l border-gray-100 p-3 shrink-0 overflow-y-auto">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-xs text-gray-400">📚 英语词汇</p>
-              </div>
-              {generatingVocab ? (
-                <div className="flex items-center gap-2 text-xs text-gray-300">
-                  <div className="w-3 h-3 border border-gray-300 border-t-gray-500 rounded-full animate-spin" />
-                  生成中...
-                </div>
-              ) : vocabWords.length > 0 ? (
-                <div className="space-y-3">
-                  {vocabWords.map((w) => (
-                    <div key={w.id} className="pb-3 border-b border-gray-50 last:border-0">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-800">{w.word}</p>
-                          <p className="text-xs text-gray-500 mt-0.5">{w.translation}</p>
-                        </div>
-                        <button
-                          onClick={async () => {
-                            try { await toggleVocabFavorite(w.id) } catch {}
-                          }}
-                          className="text-xs ml-1 shrink-0"
-                          title="收藏"
-                        >
-                          ☆
-                        </button>
-                      </div>
-                      {w.example && (
-                        <p className="text-xs text-gray-300 mt-1 italic leading-relaxed">
-                          {w.example}
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
+            <aside className={`hidden md:block border-l border-gray-100 bg-white shrink-0 overflow-y-auto transition-all duration-200
+              ${vocabCollapsed ? 'w-10 p-1' : 'w-48 p-3'}`}>
+              {vocabCollapsed ? (
+                <button onClick={() => setVocabCollapsed(false)}
+                        className="text-xs text-gray-400 hover:text-gray-600 writing-vertical pt-2"
+                        title="展开词汇">
+                  📚
+                </button>
               ) : (
-                <p className="text-xs text-gray-300">暂无词汇</p>
+                <>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-xs text-gray-400">📚 英语词汇</p>
+                    <button onClick={() => setVocabCollapsed(true)}
+                            className="text-xs text-gray-300 hover:text-gray-500">▶</button>
+                  </div>
+                  {generatingVocab ? (
+                    <div className="flex items-center gap-2 text-xs text-gray-300">
+                      <div className="w-3 h-3 border border-gray-300 border-t-gray-500 rounded-full animate-spin" />
+                      生成中...
+                    </div>
+                  ) : vocabWords.length > 0 ? (
+                    <div className="space-y-3">
+                      {vocabWords.map((w) => (
+                        <div key={w.id} className="pb-3 border-b border-gray-50 last:border-0">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-gray-800">{w.word}</p>
+                              <p className="text-xs text-gray-500 mt-0.5">{w.translation}</p>
+                            </div>
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await toggleVocabFavorite(w.id)
+                                  setFavoritedIds(prev => {
+                                    const next = new Set(prev)
+                                    if (next.has(w.id)) next.delete(w.id); else next.add(w.id)
+                                    return next
+                                  })
+                                } catch {}
+                              }}
+                              className="text-xs ml-1 shrink-0"
+                              title={favoritedIds.has(w.id) ? "已收藏" : "收藏"}
+                            >
+                              {favoritedIds.has(w.id) ? '✅' : '☆'}
+                            </button>
+                          </div>
+                          {w.example && (
+                            <p className="text-xs text-gray-300 mt-1 italic leading-relaxed">
+                              {w.example}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-300">暂无词汇</p>
+                  )}
+                </>
               )}
             </aside>
           )}
@@ -327,10 +360,10 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
       <div className="border-b border-gray-100 px-4 py-3 flex items-center justify-between max-w-4xl mx-auto">
         <h2 className="text-sm font-medium text-gray-800">爱学助手</h2>
         <button
-          onClick={() => onNavigate("welcome")}
+          onClick={() => onNavigate("profile")}
           className="text-xs text-gray-400 hover:text-gray-600"
         >
-          设置
+          我的
         </button>
       </div>
 

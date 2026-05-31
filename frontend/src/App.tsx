@@ -81,7 +81,7 @@ function App() {
       <button onClick={() => setPage("about")} className="text-xs text-gray-400 hover:text-gray-600">关于我</button>
       <div className="flex-1" />
       <button onClick={() => handleNavigate("wrongbook")} className="text-xs text-gray-400 hover:text-gray-600">错题本</button>
-      <button onClick={() => setPage("profile")} className="text-xs text-gray-400 hover:text-gray-600">我的</button>
+      <button onClick={() => setPage("profile")} className="text-xs text-gray-400 hover:text-gray-600">个人中心</button>
     </div>
   )
 
@@ -100,7 +100,7 @@ function App() {
     case "wrongbook":
       return <WrongBook onNavigate={handleNavigate} />
     case "profile":
-      return <Profile onNavigate={handleNavigate} onLogout={handleLogout} />
+      return <Profile onNavigate={handleNavigate} onLogout={handleLogout} preferences={preferences} />
     case "about":
       return <About onNavigate={handleNavigate} />
     default:
