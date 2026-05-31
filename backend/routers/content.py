@@ -74,14 +74,6 @@ async def generate_content(request: Request, req: GenerateRequest, db: Session =
     if not ai_input.strip():
         raise HTTPException(status_code=400, detail="请提供学习话题或上传文件")
 
-    # 字数上限检查（10000字）
-    MAX_INPUT_CHARS = 10000
-    if len(ai_input) > MAX_INPUT_CHARS:
-        raise HTTPException(
-            status_code=400,
-            detail=f"内容超出字数限制（最多{MAX_INPUT_CHARS}字），当前{len(ai_input)}字。请精简后重试，或等待后续更新支持更大文档。"
-        )
-
     # 内容质量预检
     if req.source_text.strip():
         valid, reason = validate_content(ai_input)
@@ -140,7 +132,7 @@ async def generate_content(request: Request, req: GenerateRequest, db: Session =
         topic = json.loads(cached.outline)[0].get("title", req.topic) if cached.outline else req.topic
         session = StudySession(
             session_id=session_id, topic=cached.topic or req.topic,
-            source_type=req.source_type, source_text=ai_input[:MAX_INPUT_CHARS],
+            source_type=req.source_type, source_text=ai_input[:50000],
             outline=cached.outline, content=cached.content,
             profile_id=profile.id, user_id=user_id,
         )
@@ -185,7 +177,7 @@ async def generate_content(request: Request, req: GenerateRequest, db: Session =
         session_id=session_id,
         topic=result.get("topic", req.topic),
         source_type=req.source_type,
-        source_text=ai_input[:MAX_INPUT_CHARS],
+        source_text=ai_input[:50000],
         outline=json.dumps(result.get("outline", []), ensure_ascii=False),
         content=json.dumps(result.get("chapters", []), ensure_ascii=False),
         profile_id=profile.id,
