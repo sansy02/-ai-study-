@@ -35,7 +35,7 @@ export default function WrongBook({ onNavigate, from }: WrongBookProps) {
       {/* 顶部栏 */}
       <div className="border-b border-gray-100 px-4 py-3 flex items-center gap-4">
         <button
-          onClick={() => onNavigate(from || "study")}
+          onClick={() => onNavigate("study")}
           className="text-xs text-gray-400 hover:text-gray-600"
         >
           ← 返回
