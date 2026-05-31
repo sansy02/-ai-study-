@@ -1,5 +1,5 @@
 """
-AI 智能教学助手 — 后端服务
+爱学助手 — 后端服务
 FastAPI 应用入口
 """
 from contextlib import asynccontextmanager
@@ -26,7 +26,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="AI 智能教学助手",
+    title="爱学助手",
     description="上传 PPT 或输入话题，AI 自动生成教学内容、英语词汇和练习题",
     version="1.0.0",
     lifespan=lifespan,
@@ -64,4 +64,4 @@ async def health_check():
     import os
     db_url = os.getenv("DATABASE_URL", "sqlite:///./aixue.db")
     db_type = "postgresql" if db_url.startswith("postgresql") else "sqlite"
-    return {"status": "ok", "message": "AI 智能教学助手后端运行中", "db": db_type}
+    return {"status": "ok", "message": "爱学助手后端运行中", "db": db_type}
