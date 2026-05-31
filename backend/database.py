@@ -10,18 +10,25 @@ from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./aixue.db")
 
-# PostgreSQL 强制使用 IPv4（Render 免费版不支持 IPv6 出站连接）
+# PostgreSQL 强制使用 IPv4 + 超时（Render 免费版不支持 IPv6 出站连接）
 if DATABASE_URL.startswith("postgresql"):
-    pg_connect_args = {}
+    pg_connect_args = {"connect_timeout": 10}
     parsed = urlparse(DATABASE_URL)
     try:
-        # 解析主机名到 IPv4
+        # 解析主机名到 IPv4，设置超时避免卡死
+        socket.setdefaulttimeout(10)
         addrs = socket.getaddrinfo(parsed.hostname, parsed.port or 5432, socket.AF_INET)
         ipv4 = addrs[0][4][0]
         pg_connect_args["hostaddr"] = ipv4
     except Exception:
         pass  # 解析失败则用默认行为
-    engine = create_engine(DATABASE_URL, connect_args=pg_connect_args if pg_connect_args else {})
+    engine = create_engine(
+        DATABASE_URL,
+        connect_args=pg_connect_args,
+        pool_size=5,
+        max_overflow=10,
+        pool_pre_ping=True,
+    )
 else:
     engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
