@@ -13,7 +13,6 @@ type Page = "login" | "welcome" | "study" | "practice" | "wrongbook" | "profile"
 
 function App() {
   const [page, setPage] = useState<Page>("login")
-  const [lastPage, setLastPage] = useState<Page>("welcome")
   const [sessionId, setSessionId] = useState(localStorage.getItem("sessionId") || "")
   const [checkingAuth, setCheckingAuth] = useState(true)
   const [preferences, setPreferences] = useState<Preferences>({
@@ -50,7 +49,6 @@ function App() {
   }
 
   const handleNavigate = (target: string, sid?: string) => {
-    setLastPage(page)
     if (sid) {
       setSessionId(sid)
       localStorage.setItem("sessionId", sid)
@@ -102,7 +100,7 @@ function App() {
     case "practice":
       return <Practice sessionId={sessionId} preferences={preferences} onNavigate={handleNavigate} />
     case "wrongbook":
-      return <WrongBook onNavigate={handleNavigate} from={lastPage} />
+      return <WrongBook onNavigate={handleNavigate} />
     case "profile":
       return <Profile onNavigate={handleNavigate} onLogout={handleLogout} preferences={preferences} />
     case "about":

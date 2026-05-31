@@ -64,8 +64,8 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
   const [preGenerating, setPreGenerating] = useState(false)
 
   // 功能开关
-  const [showEnglish, setShowEnglish] = useState(showEnglish)
-  const [showPractice, setShowPractice] = useState(showPractice)
+  const [showEnglish, setShowEnglish] = useState(preferences.show_english)
+  const [showPractice, setShowPractice] = useState(preferences.show_practice)
   const [showWrongBook, setShowWrongBook] = useState(preferences.show_wrong_book)
 
   const handleToggle = async (key: string, val: boolean) => {

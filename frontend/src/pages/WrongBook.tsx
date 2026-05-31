@@ -3,10 +3,9 @@ import { getWrongBook, type WrongBookEntry } from "../api"
 
 interface WrongBookProps {
   onNavigate: (page: string) => void
-  from?: string
 }
 
-export default function WrongBook({ onNavigate, from }: WrongBookProps) {
+export default function WrongBook({ onNavigate }: WrongBookProps) {
   const [entries, setEntries] = useState<WrongBookEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [showExplanation, setShowExplanation] = useState<Record<number, boolean>>({})
