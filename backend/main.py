@@ -61,4 +61,7 @@ app.include_router(auth_router)
 @app.get("/api/health")
 async def health_check():
     """健康检查"""
-    return {"status": "ok", "message": "AI 智能教学助手后端运行中"}
+    import os
+    db_url = os.getenv("DATABASE_URL", "sqlite:///./aixue.db")
+    db_type = "postgresql" if db_url.startswith("postgresql") else "sqlite"
+    return {"status": "ok", "message": "AI 智能教学助手后端运行中", "db": db_type}
