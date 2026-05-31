@@ -50,9 +50,9 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
   // 移动端侧边栏控制
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  // 大纲/词汇折叠
+  // 大纲/词汇折叠（词汇默认隐藏）
   const [outlineCollapsed, setOutlineCollapsed] = useState(false)
-  const [vocabCollapsed, setVocabCollapsed] = useState(false)
+  const [vocabVisible, setVocabVisible] = useState(false)
 
   // 已收藏词汇ID
   const [favoritedIds, setFavoritedIds] = useState<Set<number>>(new Set())
@@ -196,7 +196,11 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
           </button>
           <h2 className="text-sm font-medium text-gray-800 truncate flex-1">{contentTitle}</h2>
           {preferences.show_english && (
-            <span className="text-xs text-gray-300 hidden sm:inline">英语 🔛</span>
+            <button onClick={() => setVocabVisible(!vocabVisible)}
+                    className={`text-xs px-2 py-1 rounded-lg transition-colors
+                      ${vocabVisible ? 'bg-gray-100 text-gray-700' : 'text-gray-400 hover:text-gray-600'}`}>
+              📚 词汇
+            </button>
           )}
         </div>
 
@@ -304,24 +308,15 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
             </div>
           </main>
 
-          {/* 右侧词汇区 — 移动端隐藏，独立滚动，可折叠 */}
-          {preferences.show_english && (
-            <aside className={`hidden md:block border-l border-gray-100 bg-white shrink-0 transition-all duration-200
-              ${vocabCollapsed ? 'w-10 p-1' : 'w-48'}`}>
-              {vocabCollapsed ? (
-                <button onClick={() => setVocabCollapsed(false)}
-                        className="w-full py-3 text-xs text-gray-400 hover:text-gray-600 flex flex-col items-center gap-1"
-                        title="展开词汇">
-                  <span className="[writing-mode:vertical-rl] tracking-wider">词汇</span>
-                  <span>◀</span>
-                </button>
-              ) : (
-                <div className="h-full max-h-[calc(100vh-97px)] overflow-y-auto p-3">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-xs text-gray-400">📚 英语词汇</p>
-                    <button onClick={() => setVocabCollapsed(true)}
-                            className="text-xs text-gray-300 hover:text-gray-500">▶</button>
-                  </div>
+          {/* 右侧词汇区 — 默认隐藏，点右上角按钮滑出 */}
+          {preferences.show_english && vocabVisible && (
+            <aside className="border-l border-gray-100 bg-white shrink-0 overflow-hidden transition-all duration-300 w-48 md:w-56">
+              <div className="h-full max-h-[calc(100vh-97px)] overflow-y-auto p-3">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs text-gray-400">📚 英语词汇</p>
+                  <button onClick={() => setVocabVisible(false)}
+                          className="text-xs text-gray-300 hover:text-gray-500">✕</button>
+                </div>
                   {generatingVocab ? (
                     <div className="flex items-center gap-2 text-xs text-gray-300">
                       <div className="w-3 h-3 border border-gray-300 border-t-gray-500 rounded-full animate-spin" />
