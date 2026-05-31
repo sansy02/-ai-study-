@@ -190,34 +190,46 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
         )}
 
         <div className="flex flex-1">
-          {/* 左侧大纲 */}
+          {/* 左侧大纲 — 折叠时显示窄条 */}
           <aside className={`
-            border-r border-gray-100 bg-white overflow-y-auto p-3 shrink-0 transition-all duration-200
+            md:static md:translate-x-0 fixed left-0 top-[49px] bottom-0 z-50
+            border-r border-gray-100 bg-white shrink-0 transition-all duration-200
             ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-            md:translate-x-0 md:static fixed left-0 top-[49px] bottom-0 z-50 w-64
-            ${outlineCollapsed ? 'md:w-0 md:p-0 md:border-r-0 md:overflow-hidden' : 'md:w-56'}
+            ${outlineCollapsed
+              ? 'md:w-8 md:p-1 md:overflow-hidden'
+              : 'md:w-56 w-64 p-3 overflow-y-auto'
+            }
           `}>
-            <div className="flex items-center justify-between mb-2 px-2">
-              <p className={`text-xs text-gray-400 ${outlineCollapsed ? 'md:hidden' : ''}`}>教学大纲</p>
-              <button onClick={() => setOutlineCollapsed(!outlineCollapsed)}
-                      className="text-xs text-gray-300 hover:text-gray-500">
-                {outlineCollapsed ? '▶' : '◀'}
+            {outlineCollapsed ? (
+              <button onClick={() => setOutlineCollapsed(false)}
+                      className="w-full py-3 text-xs text-gray-400 hover:text-gray-600 flex flex-col items-center gap-1"
+                      title="展开大纲">
+                <span className="[writing-mode:vertical-rl] tracking-wider">大纲</span>
+                <span>▶</span>
               </button>
-            </div>
-            {outline.map((item, i) => (
-              <button
-                key={i}
-                onClick={() => { setActiveChapter(i); setSidebarOpen(false) }}
-                className={`w-full text-left px-2 py-2 rounded-lg text-sm mb-1 transition-colors
-                  ${i === activeChapter
-                    ? "bg-gray-100 text-gray-900 font-medium"
-                    : "text-gray-500 hover:bg-gray-50"
-                  }`}
-              >
-                <span className="block text-xs">{item.title}</span>
-                <span className="block text-xs text-gray-300 truncate">{item.summary}</span>
-              </button>
-            ))}
+            ) : (
+              <>
+                <div className="flex items-center justify-between mb-2 px-2">
+                  <p className="text-xs text-gray-400">教学大纲</p>
+                  <button onClick={() => setOutlineCollapsed(true)}
+                          className="text-xs text-gray-300 hover:text-gray-500">◀</button>
+                </div>
+                {outline.map((item, i) => (
+                  <button
+                    key={i}
+                    onClick={() => { setActiveChapter(i); setSidebarOpen(false) }}
+                    className={`w-full text-left px-2 py-2 rounded-lg text-sm mb-1 transition-colors
+                      ${i === activeChapter
+                        ? "bg-gray-100 text-gray-900 font-medium"
+                        : "text-gray-500 hover:bg-gray-50"
+                      }`}
+                  >
+                    <span className="block text-xs">{item.title}</span>
+                    <span className="block text-xs text-gray-300 truncate">{item.summary}</span>
+                  </button>
+                ))}
+              </>
+            )}
           </aside>
 
           {/* 中间内容区 — 高度由章节内容决定 */}
@@ -275,18 +287,19 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
             </div>
           </main>
 
-          {/* 右侧词汇区 — 移动端隐藏，可折叠 */}
+          {/* 右侧词汇区 — 移动端隐藏，独立滚动，可折叠 */}
           {preferences.show_english && (
-            <aside className={`hidden md:block border-l border-gray-100 bg-white shrink-0 overflow-y-auto transition-all duration-200
-              ${vocabCollapsed ? 'w-10 p-1' : 'w-48 p-3'}`}>
+            <aside className={`hidden md:block border-l border-gray-100 bg-white shrink-0 transition-all duration-200
+              ${vocabCollapsed ? 'w-10 p-1' : 'w-48'}`}>
               {vocabCollapsed ? (
                 <button onClick={() => setVocabCollapsed(false)}
-                        className="text-xs text-gray-400 hover:text-gray-600 writing-vertical pt-2"
+                        className="w-full py-3 text-xs text-gray-400 hover:text-gray-600 flex flex-col items-center gap-1"
                         title="展开词汇">
-                  📚
+                  <span className="[writing-mode:vertical-rl] tracking-wider">词汇</span>
+                  <span>◀</span>
                 </button>
               ) : (
-                <>
+                <div className="h-full max-h-[calc(100vh-97px)] overflow-y-auto p-3">
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-xs text-gray-400">📚 英语词汇</p>
                     <button onClick={() => setVocabCollapsed(true)}
@@ -334,7 +347,7 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
                   ) : (
                     <p className="text-xs text-gray-300">暂无词汇</p>
                   )}
-                </>
+                </div>
               )}
             </aside>
           )}
