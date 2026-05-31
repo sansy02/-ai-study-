@@ -543,6 +543,15 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
         >
           生成教学内容 →
         </button>
+
+        {/* 底部署名 */}
+        <div className="text-center mt-10">
+          <p className="text-xs text-gray-300">sansy02 制作</p>
+          <button onClick={() => onNavigate("about")}
+                  className="text-xs text-gray-300 hover:text-gray-500 underline mt-1">
+            关于我
+          </button>
+        </div>
       </div>
     </div>
   )
