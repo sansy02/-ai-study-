@@ -379,8 +379,7 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
                     <p className="text-xs text-gray-300">暂无词汇</p>
                   )}
                 </div>
-              )}
-            </aside>
+              </aside>
           )}
         </div>
       </div>
