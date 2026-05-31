@@ -328,7 +328,7 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
           </main>
 
           {/* 右侧词汇区 — 默认隐藏，点右上角按钮滑出 */}
-          {showEnglish && vocabVisible && (
+          {showEnglish && vocabVisible ? (
             <aside className="border-l border-gray-100 bg-white shrink-0 overflow-hidden transition-all duration-300 w-48 md:w-56">
               <div className="h-full max-h-[calc(100vh-97px)] overflow-y-auto p-3">
                 <div className="flex items-center justify-between mb-3">
@@ -380,7 +380,7 @@ export default function Study({ preferences, onNavigate }: StudyProps) {
                   )}
                 </div>
               </aside>
-          )}
+          ) : null}
         </div>
       </div>
     )
